@@ -88,6 +88,8 @@ Run the bot locally with `.env` configuration:
 docker compose run --rm relaygram
 ```
 
+`source_channels.txt` is mounted automatically into the container at `/app/source_channels.txt`.
+
 ### 🚀 Automatic launch (prod mode)
 
 Run the bot in production mode using `.env` configuration, with no user interaction:

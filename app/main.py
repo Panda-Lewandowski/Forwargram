@@ -8,7 +8,11 @@ from env_loader import load_project_env
 from lang import T
 
 load_project_env()
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PATH_RESOLUTION_ROOTS = [
+    Path.cwd(),
+    Path(__file__).resolve().parent.parent,
+    Path(__file__).resolve().parent,
+]
 
 # === CONFIGURATION ===
 api_id = int(os.environ.get("API_ID"))
@@ -42,7 +46,16 @@ def read_source_channel_refs():
 
     source_channels_path = Path(source_channels_file_raw)
     if not source_channels_path.is_absolute():
-        source_channels_path = PROJECT_ROOT / source_channels_path
+        resolved_path = None
+        for base_path in PATH_RESOLUTION_ROOTS:
+            candidate = base_path / source_channels_path
+            if candidate.is_file():
+                resolved_path = candidate
+                break
+        if resolved_path is None:
+            # Keep deterministic path in the error message.
+            resolved_path = PATH_RESOLUTION_ROOTS[0] / source_channels_path
+        source_channels_path = resolved_path
 
     if not source_channels_path.is_file():
         raise FileNotFoundError(f"{T['source_file_not_found']} {source_channels_path}")

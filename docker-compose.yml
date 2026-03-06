@@ -1,8 +1,10 @@
 services:
-  telegram-downloader:
+  relaygram:
     build: .
     container_name: relaygram
     env_file:
       - .env
+    volumes:
+      - ./source_channels.txt:/app/source_channels.txt:ro
     stdin_open: true
     tty: true
