@@ -124,8 +124,18 @@ async def main():
     source_channel_ids = await resolve_source_channel_ids()
     target_channel_id = await resolve_target_channel()
 
+    @client.on(events.Album(chats=source_channel_ids))
+    async def album_handler(event):
+        print(T["new_message"])
+        await client.forward_messages(target_channel_id, event.messages)
+        print(f"{T['forwarded']} {target_channel_id}")
+
     @client.on(events.NewMessage(chats=source_channel_ids))
     async def handler(event):
+        # Album posts are handled by events.Album to keep all media together.
+        if event.message.grouped_id:
+            return
+
         print(T["new_message"])
 
         await client.forward_messages(target_channel_id, event.message)
