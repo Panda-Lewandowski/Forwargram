@@ -1,0 +1,7 @@
+# One channel reference per line.
+# Supported formats:
+# - @channel_username
+# - https://t.me/channel_username
+# - https://telegram.me/channel_username
+@channel_one
+https://t.me/channel_two

@@ -4,7 +4,5 @@ services:
     container_name: relaygram
     env_file:
       - .env
-    volumes:
-      - ./downloads:/app/downloads
     stdin_open: true
     tty: true

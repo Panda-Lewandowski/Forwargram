@@ -11,8 +11,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./
 WORKDIR /app
 
-# Création d’un dossier partagé pour les fichiers téléchargés
-RUN mkdir -p /app/downloads
-
 # Lance le script
 CMD ["python", "start.py"]

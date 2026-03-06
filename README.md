@@ -1,23 +1,14 @@
 # Relaygram
 
-Relaygram is a multilingual Telegram relay bot that forwards messages from one channel to another and saves attached files locally.
+Relaygram is a Telegram relay bot that forwards messages from multiple source channels to one destination channel.
 
 ## 🧠 Purpose
 
-This project automatically monitors a Telegram channel to:
-- Download any attached files
+This project automatically monitors Telegram channels to:
 - Forward all new messages (whether they contain files or not) to another channel
 
 It is built with Python using the Telethon library and supports Docker deployment.
-
-## 🌍 Language Support
-
-The interface messages (CLI outputs) are multilingual and controlled via the `LANG` variable in your `.env` file.
-
-- `LANG=fr` for French
-- `LANG=en` for English
-
-The default language is French if not specified.
+For local runs, environment variables are loaded automatically from `.env`.
 
 ## 🔐 Telegram Authentication
 
@@ -39,12 +30,12 @@ This session will be reused automatically on each launch.
 You can choose between two modes using the `MODE` variable in `.env`:
 
 ### 🧪 Development Mode (`dev`)
-- Displays a terminal menu with a list of your channels
-- You manually select the source channel to monitor
-- The destination channel is defined in `.env`
+- Uses the same `.env` configuration as production
+- Useful for local testing
 
 ### 🚀 Production Mode (`prod`)
-- Both source and destination channels are set in `.env`
+- Source channels are loaded from a file set in `.env`
+- The destination channel is set in `.env`
 - No user interaction is needed
 - Ideal for automated server deployment
 
@@ -53,8 +44,8 @@ You can choose between two modes using the `MODE` variable in `.env`:
 - `generate_session.py` : generates the StringSession
 - `main.py` : main bot script
 - `start.py` : entrypoint that checks for session and launches the right script
-- `lang.py` : contains multilingual CLI messages
-- `downloads/` : where received files are saved
+- `lang.py` : contains CLI messages
+- `source_channels.txt.example` : example source channels file (one channel link per line)
 - `.env` : environment configuration (not versioned)
 - `.env.example` : configuration template
 - `Dockerfile` : defines the Docker image
@@ -69,9 +60,15 @@ Required variables:
 - `API_HASH` : your Telegram app hash
 - `SESSION_STRING` : persistent session string
 - `MODE` : either `dev` or `prod`
-- `SOURCE_CHANNEL_ID` : source channel ID (used only in prod)
-- `TARGET_CHANNEL_ID` : destination channel ID (used in both modes)
-- `LANG` : `fr` or `en` (optional)
+- `SOURCE_CHANNELS_FILE` : path to file with source channels (one line = one channel link)
+- `TARGET_CHANNEL_ID` : destination channel numeric ID
+
+Example `SOURCE_CHANNELS_FILE` content:
+
+```txt
+@channel_one
+https://t.me/channel_two
+```
 
 ## 🐳 Useful Docker Commands
 
@@ -83,9 +80,9 @@ Run this only once, or after modifying the Dockerfile:
 docker compose build
 ```
 
-### ▶️ Interactive launch (dev mode)
+### ▶️ Launch in development mode
 
-Run the bot in development mode. You'll be able to choose the source channel manually:
+Run the bot locally with `.env` configuration:
 
 ```bash
 docker compose run --rm relaygram

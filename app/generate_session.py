@@ -1,6 +1,6 @@
 from telethon.sync import TelegramClient
 from telethon.sessions import StringSession
-from lang import T  # ⬅️ Ajout des traductions
+from lang import T
 
 api_id = int(input("🔑 API ID: "))
 api_hash = input("🔐 API HASH: ")

@@ -1,1 +1,18 @@
 .env
+.venv
+.pycache/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local runtime/config files
+source_channels.txt
+
+# OS files
+.DS_Store

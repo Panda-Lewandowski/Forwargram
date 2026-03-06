@@ -1,46 +1,102 @@
 import os
+from pathlib import Path
+from urllib.parse import urlparse
+
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
-from lang import T 
+from env_loader import load_project_env
+from lang import T
+
+load_project_env()
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # === CONFIGURATION ===
 api_id = int(os.environ.get("API_ID"))
 api_hash = os.environ.get("API_HASH")
 session_string = os.environ.get("SESSION_STRING")
-download_folder = 'downloads'
 
 mode = os.environ.get("MODE", "dev").lower()
 
 client = TelegramClient(StringSession(session_string), api_id, api_hash)
-os.makedirs(download_folder, exist_ok=True)
 
-async def choisir_channel_dev():
-    print(T["connect"])
-    await client.start()
+def normalize_channel_ref(channel_ref):
+    ref = channel_ref.strip()
+    if not ref:
+        return ref
 
-    channels = []
-    print("\n" + T["select_channel"] + "\n")
-    async for dialog in client.iter_dialogs():
-        if dialog.is_channel:
-            channels.append(dialog)
+    if ref.startswith("http://") or ref.startswith("https://"):
+        parsed = urlparse(ref)
+        host = parsed.netloc.lower().replace("www.", "")
+        if host in {"t.me", "telegram.me"}:
+            parts = [part for part in parsed.path.split("/") if part]
+            if parts:
+                return f"@{parts[0]}"
 
-    for i, ch in enumerate(channels):
-        print(f"[{i}] {ch.name} (ID: {ch.entity.id})")
+    return ref
 
-    choix = int(input("\n" + T["choose_channel"] + " "))
-    canal = channels[choix]
-    print(f"\n✅ {T['channel_selected']} : {canal.name} (ID: {canal.entity.id})\n")
-    return canal.entity
 
-async def get_channel_prod():
-    await client.start()
-    source_channel_id = int(os.environ.get("SOURCE_CHANNEL_ID"))
+def read_source_channel_refs():
+    source_channels_file_raw = os.environ.get("SOURCE_CHANNELS_FILE")
+    if not source_channels_file_raw:
+        raise ValueError(T["source_file_missing"])
 
-    async for dialog in client.iter_dialogs():
-        if dialog.is_channel and dialog.entity.id == source_channel_id:
-            print(f"✅ {T['source_found']} : {dialog.name} (ID: {dialog.entity.id})")
-            return dialog.entity
-    raise ValueError(f"❌ {T['source_not_found']} {source_channel_id}")
+    source_channels_path = Path(source_channels_file_raw)
+    if not source_channels_path.is_absolute():
+        source_channels_path = PROJECT_ROOT / source_channels_path
+
+    if not source_channels_path.is_file():
+        raise FileNotFoundError(f"{T['source_file_not_found']} {source_channels_path}")
+
+    refs = []
+    with open(source_channels_path, "r", encoding="utf-8") as channels_file:
+        for raw_line in channels_file:
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            refs.append(normalize_channel_ref(line))
+
+    if not refs:
+        raise ValueError(f"{T['source_file_empty']} {source_channels_path}")
+
+    return refs
+
+
+async def resolve_source_channel_ids():
+    source_channel_refs = read_source_channel_refs()
+    source_channel_ids = []
+
+    print(T["resolving_sources"])
+    for channel_ref in source_channel_refs:
+        try:
+            entity = await client.get_entity(channel_ref)
+        except Exception as exc:
+            raise ValueError(f"{T['source_not_found']} {channel_ref}") from exc
+
+        source_channel_ids.append(entity.id)
+        channel_name = getattr(entity, "title", None) or getattr(entity, "username", "unknown")
+        print(f"✅ {T['source_found']} : {channel_name} (ID: {entity.id})")
+
+    return source_channel_ids
+
+
+async def resolve_target_channel():
+    target_channel_id_raw = os.environ.get("TARGET_CHANNEL_ID", "").strip()
+    if not target_channel_id_raw:
+        raise ValueError(T["target_missing"])
+
+    try:
+        target_channel_id = int(target_channel_id_raw)
+    except Exception as exc:
+        raise ValueError(f"{T['target_invalid_id']} {target_channel_id_raw}") from exc
+
+    try:
+        target_entity = await client.get_entity(target_channel_id)
+    except Exception as exc:
+        raise ValueError(f"{T['target_not_found']} {target_channel_id}") from exc
+
+    target_name = getattr(target_entity, "title", None) or getattr(target_entity, "username", "unknown")
+    print(f"✅ {T['target_found']} : {target_name} (ID: {target_channel_id})")
+    return target_channel_id
 
 
 async def main():
@@ -48,26 +104,18 @@ async def main():
 
     if mode == "prod":
         print(T["mode_prod"])
-        source_chat = await get_channel_prod()
-        target_channel_id = int(os.environ.get("TARGET_CHANNEL_ID"))
     else:
         print(T["mode_dev"])
-        source_chat = await choisir_channel_dev()
-        target_channel_id = int(os.environ.get("TARGET_CHANNEL_ID"))
 
-    @client.on(events.NewMessage(chats=source_chat))
+    source_channel_ids = await resolve_source_channel_ids()
+    target_channel_id = await resolve_target_channel()
+
+    @client.on(events.NewMessage(chats=source_channel_ids))
     async def handler(event):
         print(T["new_message"])
 
         await client.forward_messages(target_channel_id, event.message)
         print(f"{T['forwarded']} {target_channel_id}")
-
-        if event.message.file:
-            filename = event.message.file.name or f"file_{event.message.id}"
-            print(f"{T['downloading']} : {filename}")
-            path = os.path.join(download_folder, filename)
-            await event.message.download_media(file=path)
-            print(f"{T['saved']} : {path}")
 
     print(T["listening"])
     await client.run_until_disconnected()
