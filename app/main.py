@@ -10,6 +10,7 @@ from lang import T
 load_project_env()
 PATH_RESOLUTION_ROOTS = [
     Path.cwd(),
+    Path("/config"),
     Path(__file__).resolve().parent.parent,
     Path(__file__).resolve().parent,
 ]

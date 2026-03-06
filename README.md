@@ -88,7 +88,7 @@ Run the bot locally with `.env` configuration:
 docker compose run --rm relaygram
 ```
 
-`source_channels.txt` is mounted automatically into the container at `/app/source_channels.txt`.
+Project files are mounted into the container at `/config`, so `SOURCE_CHANNELS_FILE` can point to any file from the repo (for example `source_channels.txt` or `source_channels_flow1.txt`) without extra launch variables.
 
 ### 🚀 Automatic launch (prod mode)
 

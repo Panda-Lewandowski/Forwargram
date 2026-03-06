@@ -5,7 +5,7 @@ services:
     env_file:
       - ${ENV_FILE:-.env}
     volumes:
-      - ${SOURCE_CHANNELS_HOST_FILE:-./source_channels.txt}:${SOURCE_CHANNELS_CONTAINER_FILE:-/app/source_channels.txt}:ro
+      - ./:/config:ro
     restart: unless-stopped
     stdin_open: true
     tty: true
