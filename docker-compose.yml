@@ -1,10 +1,11 @@
 services:
   relaygram:
     build: .
-    container_name: relaygram
+    image: ${IMAGE_NAME:-relaygram:latest}
     env_file:
-      - .env
+      - ${ENV_FILE:-.env}
     volumes:
-      - ./source_channels.txt:/app/source_channels.txt:ro
+      - ${SOURCE_CHANNELS_HOST_FILE:-./source_channels.txt}:${SOURCE_CHANNELS_CONTAINER_FILE:-/app/source_channels.txt}:ro
+    restart: unless-stopped
     stdin_open: true
     tty: true
